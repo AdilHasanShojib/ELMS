@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SocialAPI.TData;
 using SocialAPI.TDto;
 using SocialAPI.TEntities;
+using SocialAPI.TInterfaces;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -11,15 +12,17 @@ namespace SocialAPI.Controllers
     public class AuthController : BaseController
     {
         private readonly TDataContext _context;
+        private readonly ITokenService _tokenService;
 
-        public AuthController(TDataContext context)
+        public AuthController(TDataContext context, ITokenService tokenService)
         {
             _context = context;
+            _tokenService = tokenService;
         }
 
         [HttpPost("register")]
 
-        public async Task<ActionResult<AppUser>> UserRegister(RegisterDto registerDto)
+        public async Task<ActionResult<UserDto>> UserRegister(RegisterDto registerDto)
         {
             if (await IsuserExists(registerDto.UserName)) return BadRequest("UserName is already Exist!");
 
@@ -33,9 +36,16 @@ namespace SocialAPI.Controllers
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            //return 0k(user);
+            var userToken = new UserDto
+            {
+                Username = user.Name,
+                Token = await _tokenService.CreateToken(user)
 
-            return Ok(user);
+
+            };
+
+            return Ok(userToken);
+
 
 
         }
@@ -44,7 +54,7 @@ namespace SocialAPI.Controllers
         [HttpPost("login")]
 
 
-        public async Task<ActionResult<AppUser>> UserLoging(LoginDto loginDto)
+        public async Task<ActionResult<UserDto>> UserLoging(LoginDto loginDto)
         {
 
 
@@ -59,7 +69,18 @@ namespace SocialAPI.Controllers
 
             }
 
-            return Ok(user);
+           
+
+
+            var userToken = new UserDto
+            {
+                Username = user.Name,
+                Token = await _tokenService.CreateToken(user)
+
+
+            };
+
+            return Ok(userToken);
 
 
 
